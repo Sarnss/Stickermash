@@ -5,7 +5,9 @@ import EmojiPicker from '@/components/EmojiPicker';
 import EmojiSticker from '@/components/EmojiSticker';
 import IconButton from '@/components/IconButton';
 import ImageViewer from '@/components/ImageViewer';
-import domtoimage from 'dom-to-image';
+import * as MediaLibrary from 'expo-media-library';
+import { captureRef } from 'react-native-view-shot';
+
 
 import * as ImagePicker from 'expo-image-picker';
 
@@ -64,27 +66,44 @@ export default function Index() {
     setIsModalVisible(true);
   };
 
-  const onSaveImageAsync = async () => {
-      if (Platform.OS !== 'web') {
-} else {
-      try {
-        // @ts-ignore
-        const dataUrl = await domtoimage.toJpeg(imageRef.current, {
-          quality: 0.95,
-          width: 320,
-          height: 440,
-        });
+const onSaveImageAsync = async () => {
+  if (Platform.OS !== 'web') {
+    try {
+      const { granted } =
+        await MediaLibrary.requestPermissionsAsync();
 
-        let link = document.createElement('a');
-        link.download = 'sticker-smash.jpeg';
-        link.href = dataUrl;
-        link.click();
-      } catch (e) {
-        console.log(e);
+      if (!granted) {
+        alert('Permission denied');
+        return;
       }
-    }
-  };
 
+      const localUri = await captureRef(imageRef.current!, {
+        format: 'png',
+        quality: 1,
+      });
+
+      await MediaLibrary.createAssetAsync(localUri);
+
+      alert('Saved!');
+    } catch (e) {
+      console.log('Save error:', e);
+    }
+  } else {
+    try {
+      const localUri = await captureRef(imageRef.current!, {
+  format: 'png',
+  quality: 1,
+      });
+
+      const link = document.createElement('a');
+      link.download = 'sticker-smash.jpeg';
+      link.href = localUri;
+      link.click();
+    } catch (e) {
+      console.log('Web save error:', e);
+    }
+  }
+};
   return (
     <GestureHandlerRootView style={styles.container}>
       <View style={styles.imageContainer}>
